@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <style>
+        * {margin:0; padding:0;}
+        #ul1 {width:1000px; position:relative; margin:10px auto;}
+        #ul1 li {float:left; list-style:none; margin:10px; z-index:1;cursor:move;}
+        #ul1 .active {border:2px dashed red;}
+        img{width:200px;height:200px;}
+    </style>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>无标题文档</title>
+    <script>
+        function getStyle(obj,attr){//获取样式
+            if(obj.currentStyle){
+                return obj.currentStyle[attr];//ie
+            }else{
+
+                return getComputedStyle(obj,false)[attr];
+            }
+        };
+        function move(obj,json,fn){//完美运动框架
+            clearInterval(obj.timer);//关闭前一个计时器，防止计时器叠加同时执行多次,可以直接用对象的timer
+            obj.timer=setInterval(function(){
+                var stop=true;//判断确保每个参数都走完
+                for(var attr in json){//遍历对象
+                    var icur=0,
+                        speed;
+                    if(attr=='opacity'){
+                        icur=parseInt(parseFloat(getStyle(obj,attr))*100);//小数乘100，再取整，防止结果为小数，出错（程序里面不要有小数，机制导致错误）
+                    }else{
+                        icur=parseInt(getStyle(obj,attr));//获取数值不要单位
+                    };
+                    speed=(json[attr]-icur)/8;//缓动效果，速度越来越小,有除就要取整
+                    speed=speed>0?Math.ceil(speed):Math.floor(speed);//取整，小数点停止不前，2.6px 变成2px
+                    if(icur!=json[attr]){//有一个参数没走完就不停止计时器
+                        stop=false;
+                    };
+                    if(attr=='opacity'){
+                        obj.style.opacity=(icur+speed)/100;
+                        obj.style.filter='alpha(opacity:'+(icur+speed)+')';
+                    }else{
+                        obj.style[attr]=icur+speed+'px';
+                    };
+                };
+                if(stop){//都运动完了再关闭
+                    clearInterval(obj.timer);//停止运动
+                    if(fn){//链式运动
+                        fn();//执行回调函数
+                    };
+                };
+            },30)
+        };
+        function jiance(obj1,obj2){//碰撞检测
+            var l1=obj1.offsetLeft,
+                r1=obj1.offsetLeft+obj1.offsetWidth,
+                t1=obj1.offsetTop,
+                b1=obj1.offsetTop+obj1.offsetHeight,
+
+                l2=obj2.offsetLeft,
+                r2=obj2.offsetLeft+obj2.offsetWidth,
+                t2=obj2.offsetTop,
+                b2=obj2.offsetTop+obj2.offsetHeight;
+            if(r1<l2||l1>r2||b1<t2||t1>b2){
+                return false;//没碰到,先从没碰到的情况考虑上面的判断条件就简单了
+            }else{
+                return true;
+            }
+        };
+        function getDis(a,b){//勾股定理获取两点之间的距离
+            var x=a.offsetLeft-b.offsetLeft;
+            var y=a.offsetTop+b.offsetTop;
+            return Math.sqrt(x*x+y*y);
+        };
+        function exchange(tag){
+            var i,
+                arr=[],
+                zin=2;//按下和移动时让目标元素在最上面
+            for(i=0;i<tag.length;i++){//布局转换
+                arr[i]={left:tag[i].offsetLeft,top:tag[i].offsetTop}//存下位置信息以供后面交换位置的时候用
+            };
+            for(i=0;i<tag.length;i++){
+                tag[i].style.left=arr[i].left+'px';
+                tag[i].style.top=arr[i].top+'px';
+
+                tag[i].style.position='absolute';
+                tag[i].style.margin='0';
+
+                tag[i].index=i;//存下每个元素的下标以供后面交换位置的时候用
+                drag(tag[i]);//每个元素绑定拖拽事件
+            };
+            function drag(obj){//完美拖拽框架
+                obj.onmousedown=function(ev){
+                    var ev=ev||event,
+                        sx=ev.clientX-obj.offsetLeft,
+                        sy=ev.clientY-obj.offsetTop;
+                    if(obj.setCapture){//ie下不移出也不选到其他元素,obj.setCapture()把事件聚焦到obj上
+                        obj.setCapture();
+                        obj.onmousemove=fnmove;
+                        obj.onmouseup=fnup;
+                    }else{
+                        document.onmousemove=fnmove;//用document而不是obj，防止移动太快鼠标跑到元素外面导致拖拽失效
+                        document.onmouseup=fnup;
+                    };
+
+                    obj.style.zIndex=zin++;//确保当前的元素永远在最上面，z-index更大
+
+                    function fnmove(ev){
+                        var ev=ev||event;
+                        var left=ev.clientX-sx,
+                            top=ev.clientY-sy,
+                            mx=document.documentElement.clientWidth-obj.offsetWidth,
+                            my=document.documentElement.clientHeight-obj.offsetHeight;
+                        obj.style.left=left+'px';
+                        obj.style.top=top+'px';
+
+                        for(i=0;i<tag.length;i++){
+                            tag[i].className='';
+                        };
+                        var is=min(obj);//返回的是碰上的最近的哪个元素
+                        if(is)
+                        {
+                            is.className='active';//让他加个边框告诉用户将要移到哪里去
+                        };
+                    }
+                    function fnup(){
+                        if(obj.releaseCapture){
+                            this.releaseCapture();//释放obj元素聚焦的事件
+                        }
+                        this.onmousemove=null;
+                        this.onmouseup=null;
+
+                        var is=min(obj);
+                        if(is){//如果碰上了
+                            is.className='';//交换了就让边框消失
+
+                            is.style.zIndex=zin++;//此处要分别加确保移动的时候也是在最上面
+                            obj.style.zIndex=zin++;
+
+                            move(is,arr[obj.index]);//调用运动框架
+                            move(obj,arr[is.index]);//交换位置就是从开始的数组里面获取彼此的值
+
+                            var tmp=0;//交换索引值，不交换的话上面取数组的值会乱掉
+                            tmp=obj.index;
+                            obj.index=is.index;
+                            is.index=tmp;
+                        }else{
+                            move(obj,arr[obj.index])//如果没有碰上就回去
+                        }
+                    }
+                    return false;//修复低版本火狐第二次拖拽bug,修复会抓取到其他元素
+                };
+            };
+            function min(obj){//获取碰到的距离最近的那个元素
+                var max=1000000,
+                    mindex=-1;
+                for(i=0;i<tag.length;i++){
+                    if(obj==tag[i]){//如果是他本身就跳过
+                        continue;
+                    }
+                    if(jiance(obj,tag[i])){//如果碰上了（返回true）
+                        var val=getDis(obj,tag[i]);//val不是数组，每次获取一个值
+                        if(max>val){
+                            max=val;//让max永远是最小的哪个
+                            mindex=i;//保存最小的哪个的索引
+                        }
+                    }
+                };
+                if(mindex==-1){//说明一直是本身，没碰到
+                    return null;
+                }else{
+                    return tag[mindex];//返回碰到的距离最近的那个元素
+                };
+            };
+        };
+
+        window.onload=function(){
+            var li=document.getElementsByTagName('li');
+            exchange(li)
+        }
+
+    </script>
+</head>
+<body>
+<ul id="ul1">
+    <li><img src="../static/img/12.jpg" /></li>
+    <li><img src="../static/img/13.jpg" /></li>
+    <li><img src="../static/img/14.jpg" /></li>
+    <li><img src="../static/img/15.jpg" /></li>
+</ul>
+
+</body>
+</html>

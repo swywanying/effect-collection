@@ -3,8 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <link rel="stylesheet" href="../style/reset.css">
+    <link rel="stylesheet" href="../style/style.css">
 </head>
 <body>
+    //left to right 文字浮动
+    <div class="notify">
+        <ul>
+            <li>left to right 文字浮动&文字浮动&文字浮动</li>
+        </ul>
+    </div>
 
 </body>
+<script type="text/javascript" src="../app/jquery.js"></script>
+<script>
+    //left to right 文字浮动
+    function noticeFn(){
+        var oUL=$(".notify ul");
+        var oLi=oUL.find("li");
+        var width=0;
+        for(var i=0;i<oLi.length;i++){
+            width+=Math.ceil(oLi.eq(i).width())+50
+        }
+        oUL.width(width);
+        var initLeft = parseInt(oUL.css("left"));
+        var left=parseInt(oUL.css("left"));
+        var uwidth=0;
+        for(var i=0;i<2;i++){
+            // oLi.eq(i).css("left",initLeft);
+            uwidth+=Math.ceil(oLi.eq(i).width())+50
+        }
+        var timer=setInterval(e,100);
+        oUL.on("mouseenter",function(){
+            clearInterval(timer)
+        });
+        oUL.on("mouseleave",function(){
+            timer=setInterval(e,100)
+        });
+        function e(){
+            left-=3;
+            if(left<=-uwidth){
+                left=initLeft
+            }
+            oUL.css("left",left)
+        }
+    };
+    noticeFn();
+</script>
 </html>

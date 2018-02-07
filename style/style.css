@@ -1,0 +1,24 @@
+.notify{
+    height:20px;
+    width: 200px;
+    line-height:20px;
+    color:#3a3a3a;
+    margin:20px;
+    overflow:hidden;
+    position:relative;
+    background: #7e8c8d;
+}
+.notify ul {
+    height:100%;
+    padding-right:0;
+    width:10000px;
+    position:absolute;
+    left:180px
+}
+.notify ul li {
+    float:left;
+    padding-right:100px;
+    font-size:12px;
+    display:block;
+    line-height:20px
+}
